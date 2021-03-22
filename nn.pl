@@ -34,14 +34,24 @@ weights([[0.5], [0.5], [0.5]]).
 test([[0.0, 1.0, 0.0]]).
 
 /**
- * Sigmoid function.
- * @param X1 value for which sigmoid will be counted
+ * Sigmoid activation function.
+ * @param X value for which sigmoid will be counted
  * @param true for derivation of sigmoid
- *        false for sigmoid
+ *        other for sigmoid
  * @param Y output value
  */
-sigmoid(X, true, Y) :- Y is X * (1 - X).
-sigmoid(X, false, Y) :- Y is 1/(1 + (exp(-X))).
+sigmoid(X, true, Y) :- !, Y is X * (1 - X).
+sigmoid(X, _, Y) :- Y is 1/(1 + (exp(-X))).
+
+/**
+ * Tanh activation function
+ * @param X value for which will be tanh counted
+ * @param true for derivation of tanh
+ *        other for tanh
+ * @param Y output value
+ */
+tanh(X, true, Y) :- !, Y is 1 - X * X.
+tanh(X, _, Y) :- Y is (exp(X) - exp(-X))/((exp(X) + (exp(-X)))).
 
 /**
  * Activtion function for whole matrix.
