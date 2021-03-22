@@ -1,6 +1,8 @@
 /**
  * Simple neural network.
  */
+:- initialization(main). 
+ 
 :- use_module(library(clpfd)).
 :- op(500, xfy, =+>).
 :- op(500, xfy, =->).
@@ -35,7 +37,7 @@ test([[0.0, 1.0, 0.0]]).
 
 /**
  * Sigmoid activation function.
- * @param X value for which sigmoid will be counted
+ * @param X value for which sigmoid will be calculated
  * @param true for derivation of sigmoid
  *        other for sigmoid
  * @param Y output value
@@ -45,13 +47,33 @@ sigmoid(X, _, Y) :- Y is 1/(1 + (exp(-X))).
 
 /**
  * Tanh activation function
- * @param X value for which will be tanh counted
+ * @param X value for which will be tanh calculated
  * @param true for derivation of tanh
  *        other for tanh
  * @param Y output value
  */
 tanh(X, true, Y) :- !, Y is 1 - X * X.
 tanh(X, _, Y) :- Y is (exp(X) - exp(-X))/((exp(X) + (exp(-X)))).
+
+/**
+ * Softsign activation function
+ * @param X value for which will be softsign calculated
+ * @param true for derivation of softsign
+ *        other for softsign
+ * @param Y output value
+ */
+softsign(X, true, Y) :- !, Y is 1 / (1 + abs(X)*abs(X)).
+softsign(X, _, Y) :- Y is X / (1 + abs(X)).
+
+/**
+ * Gaussian activation function
+ * @param X value for which will be gaussian calculated
+ * @param true for derivation of gaussian
+ *        other for gaussian
+ * @param Y output value
+ */
+gaussian(X, true, Y) :- !, Y is -2 * X * exp(-(X * X)). 
+gaussian(X, _, Y) :- Y is exp(-(X * X)).
 
 /**
  * Activtion function for whole matrix.
@@ -143,7 +165,7 @@ run(Inp, E) :- inputs(I),
                nth0(0, Expcl, Expc), 
                write("Expected = ["), write(Expc), write("]"), nl,
                write("Predicted = "), write(P), nl, nl.
-
+               
 /**
  * Dot product of 2 lists.
  * @param [X|XS] first list
@@ -225,3 +247,7 @@ matMul([XX|XXS], [YY|YYS], [ZZ|ZZS]) :- vectOp(mul, XX, YY, ZZ),
                                         matMul(XXS, YYS, ZZS).
 
 mul(X, Y, Z) :- Z is X * Y.
+
+%% Main
+main :- run([[1.0,0.0,1.0]], 25000), halt.
+main :- halt(1).
