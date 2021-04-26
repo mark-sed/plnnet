@@ -1,0 +1,140 @@
+\documentclass[a4paper, 11pt]{article}
+%\usepackage[utf8x]{inputenc}
+\usepackage[total={18cm,25cm}, top=2cm, left=1.5cm, includefoot]{geometry}
+\usepackage[czech]{babel}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{amssymb}
+\usepackage{amsmath, amsthm}
+\usepackage{mathtools, moresize}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{ragged2e}
+\usepackage{graphicx} 
+\usepackage{pdfpages}
+\usepackage{icomma}
+\usepackage{algorithm2e}
+\usepackage{listings}
+\usepackage{nccmath}
+
+
+
+\usepackage[
+%backend=biber,
+style=numeric,
+sorting=ynt,
+  backend=bibtex      % biber or bibtex
+%,style=authoryear    % Alphabeticalsch
+ ,sortcites=true      % some other example options ...
+ ,block=none
+ ,indexing=false
+ ,citereset=none
+ ,isbn=true
+ ,url=true
+ ,doi=true            % prints doi
+ ,natbib=true         % if you need natbib functions
+]{biblatex}
+ 
+\addbibresource{literatura.bib}
+
+\providecommand{\uv}[1]{\quotedblbase #1\textquotedblleft}
+
+\title{Prolog Neural Network\\\Large Funkcionální a logické programování\,--\,2. projekt}
+\date{}
+\author{Bc. Marek Sedláček \texttt{(xsedla1b)}}
+
+\begin{document}
+\maketitle
+
+\section{Prolog Neural Network (PLNNet)}
+
+PLNNet je projekt na ukázku implementace jednoduché neuronové sítě v jazyce Prolog (SWI-Prolog). Funkce pracují zásadně s maticemi pro ulehčení programování a projekt obsahuje ukázkové a interaktivní funkce.
+
+\section{Implementace}
+
+Projekt je rozdělený do 3 modulů, a to: \texttt{input2}, \texttt{plnnet} a \texttt{nn}. 
+
+\begin{itemize}
+    \item Modul \texttt{input2} je lehce modifikovaná verze skriptu se stejným jménem poskytnutá k tvorbě projektu.
+    \item Modul \texttt{nn} obsahuje funkce pro práci s maticemi, soubory dat pro trénování a představuje neuronovou síť samotnou. Funkce a operátory pro práci s maticemi jsou z modulu exportovány a je tedy možné je snadno využít pro případné úpravy vstupních nebo výstupních matic.
+    \item Modul \texttt{plnnet} je ukázkový kód práce s modulem \texttt{nn} včetně interaktivní funkce pro natrénování neuronové sítě a následné predikce dle vstupů uživatele. 
+\end{itemize}
+
+\subsection{Proces trénování a predikce}
+
+Před výpočtem predikce dle uživatelského vstupu je potřeba provést trénování, což je možné pomocí funkce \texttt{training/6}, která jako argumenty přijímá aktivační funkci, trénovací vstupy, očekávané výstupy, váhy, počet epoch na trénování a~jejím výstupem jsou nově natrénované váhy pro jednotlivé iterace trénování.
+
+Aktivačních funkcí nabízí modul \texttt{nn} více:
+\begin{itemize}
+    \item \texttt{sigmoid/3} -- sigmoida,
+    \item \texttt{tanh/3} -- hyperbolická funkce,
+    \item \texttt{softsign/3} -- funkce softsign,
+    \item \texttt{gaussian/3} -- Gaussova funkce.
+\end{itemize}
+
+\noindent Je-li jakákoliv funkce volána s hodnotou \texttt{true} jako druhým argumentem, vrátí tato funkce svou derivaci, což je potřeba při trénování v procesu backtrackingu.
+
+Funkce \texttt{training/6} provádí volání forward funkce následované backward funkcí pro všechny iterace.
+
+Po natrénování vah je možné zavolat predikční funkci \texttt{predict/6} opět s aktivační funkcí, vstupem pro predikci a natrénovanými váhami. Výstupem je predikce pro vstupní hodnoty.
+
+\section{Spuštění}
+
+Pro spuštění programu stačí pouze interpretu \texttt{swipl} jako první argument zadat soubor \texttt{plnnet.pl}:
+
+\begin{verbatim}
+    swipl plnnet.pl
+\end{verbatim}
+
+\noindent Nebo pomocí Makefile s možností \texttt{interactive}:
+
+\begin{verbatim}
+    make interactive
+\end{verbatim}
+
+Tímto se spustí interaktivní textové rozhraní, kde stačí zadat počet epoch pro trénování a následně data na predikci (oddělené mezerou).
+
+Další možností je překlad do binárního souboru pomocí Makefile (příkaz \texttt{make}). Tato binární verze však volá pouze funkci \texttt{main} a není tedy možné zde provádět testování a predikce bez trénování (pro tento přístup je vhodný \texttt{interactive} mód).
+
+Trénovací data jsou načtená ze souboru \texttt{train}, výstupy pro jednotlivá data ze souboru \texttt{outputs} a váhy ze souboru \texttt{weights}. Kde formát těchto souborů vždy obsahuje na jednom řádku jedny vstupní data obalená hranatými závorkami, jednotlivé hodnoty jsou odděleny čárkou a řádek je ukončen tečkou. Tedy například:
+
+\begin{verbatim}
+    [4.2, 3.14, 0.1].
+    [1.1, 5.42, 8.4].
+\end{verbatim}
+
+\noindent Tento soubor by reprezentoval matici:
+\\
+
+\begin{fleqn}
+ \makebox{} \left| \begin{array}{ccc}
+4,2 & 3,14 & 0,1 \\
+1,1 & 5,42 & 8,4 \end{array}\right| 
+\end{fleqn}
+\\
+
+Pro provedení predikce je tato hodnota vypsána a natrénované váhy jsou uloženy do predikátu \texttt{trainedWeights/1}, pro případné další predikce, které je možné provést například následovně:
+
+\begin{verbatim}
+    trainedWeights(W), predict(sigmoid, [[1.0, 0.0, 0.0]], W, P).
+\end{verbatim}
+
+\noindent Případně je možné zavolat funkci \texttt{main/0}, která spustí opět interaktivní rozhraní.
+
+\subsection{Výchozí neuronová síť}
+
+Výchozí nastavení vstupních souborů neuronové sítě jsou data, kde se má síť naučit, že očekávaným výstupem predikce je první hodnota ve vstupu booleanových hodnot zapsaných v pohyblivé řádové čárce podobě (pro \texttt{[[1.0 0.0 0.0]]} je to \texttt{[[1.0]]}). 
+
+\subsection{Testování sítě}
+
+Pro testování sítě na výchozí vstupní data je možné zavolat funkci \texttt{runTests/1} s počtem epoch na natrénování a tato funkce poté načte testovací data ze souboru \texttt{test} a vypíše pro jednotlivé vstupy očekávanou predikci (první hodnotu) a skutečnou predikci.
+
+
+%\vspace{10em}
+
+%\nocite{paral_alg}
+%\nocite{mpi_man}
+%\printbibliography[title=Literatura,heading=bibintoc]
+\end{document}

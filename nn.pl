@@ -1,9 +1,38 @@
 /**
  * Simple neural network.
+ * @author Marek Sedláček (xsedla1b)
+ * @email xsedla1b@fit.vutbr.cz
+ * @date April 2021
  */
-:- initialization(main). 
- 
+
+% Exported functions
+:- module(nn, [sigmoid/3,
+               tanh/3,
+               softsign/3,
+               gaussian/3,
+               training/6,
+               predict/4,
+               loadTrainData/1, 
+               loadInput/1, 
+               loadWeights/1, 
+               loadOutputData/1,
+               loadData/2,
+               op(500, xfy, =+>),
+               op(500, xfy, =->),
+               op(500, xfy, =*>),
+               getInputs/1,
+               getOutputs/1,
+               getWeights/1,
+               matAdd/3,
+               matSub/3,
+               matMul/3,
+               dot/3]).
+
 :- use_module(library(clpfd)).
+
+/**
+ * Operators for making matrix operations more readable.
+ */
 :- op(500, xfy, =+>).
 :- op(500, xfy, =->).
 :- op(500, xfy, =*>).
@@ -13,27 +42,13 @@
 (X, Y) =-> P :- matSub(X, Y, P).
 (X, Y) =*> P :- matMul(X, Y, P).
 
-inputs([[0.0, 1.0, 0.0],
-          [0.0, 1.0, 1.0],
-          [0.0, 0.0, 1.0],
-          [1.0, 0.0, 0.0],
-          [1.0, 0.0, 1.0],
-          [1.0, 1.0, 1.0],
-          [0.0, 0.0, 0.0],
-          [1.0, 1.0, 1.0]]).
-
-outputs([[0.0], 
-         [0.0], 
-         [0.0], 
-         [1.0], 
-         [1.0], 
-         [1.0],
-         [0.0],
-         [1.0]]).
-
-weights([[0.5], [0.5], [0.5]]).
-
-test([[0.0, 1.0, 0.0]]).
+/**
+ * Dynamic predicates which will be replaced later
+ * when input files are loaded.
+ */
+getInputs(X) :- inputs(X).
+getOutputs(X) :- outputs(X).
+getWeights(X) :- weights(X).
 
 /**
  * Sigmoid activation function.
@@ -152,19 +167,6 @@ training(_, _, _, _, _, _) :- !.
  */
 predict(Fun, Data, Weights, Pred) :- dot(Data, Weights, DotD),
                                      activation(Fun, false, DotD, Pred).
-
-run(Inp, E) :- inputs(I),
-               outputs(O),
-               weights(W),
-               training(sigmoid, I, O, W, E, NW),
-               length(NW, L),
-               L1 is L-1,
-               nth0(L1, NW, NWl), !,
-               predict(sigmoid, Inp, NWl, P),
-               nth0(0, Inp, Expcl),
-               nth0(0, Expcl, Expc), 
-               write("Expected = ["), write(Expc), write("]"), nl,
-               write("Predicted = "), write(P), nl, nl.
                
 /**
  * Dot product of 2 lists.
@@ -248,6 +250,66 @@ matMul([XX|XXS], [YY|YYS], [ZZ|ZZS]) :- vectOp(mul, XX, YY, ZZ),
 
 mul(X, Y, Z) :- Z is X * Y.
 
-%% Main
-main :- run([[1.0,0.0,1.0]], 25000), halt.
-main :- halt(1).
+/**
+ * Reads file from a stream
+ * Inspired by https://stackoverflow.com/a/4805931
+ * @param Stream file stream
+ * @param [X|L] read lines
+ */
+read_file(Stream, []) :- at_end_of_stream(Stream).
+read_file(Stream, [X|L]) :- \+ at_end_of_stream(Stream),
+                            read(Stream, X),
+                            read_file(Stream, L).
+
+/**
+ * Removes last value from a list
+ * @param [X|XS] input list
+ * @param [X|L] output list
+ */
+removeLast([_], []) :- !.
+removeLast([X|XS], [X|L]) :- removeLast(XS, L). 
+
+/**
+ * Loads matrix from passed in file
+ * @param FName path to data file
+ * @param D content of the file
+ */
+loadData(FName, D) :- open(FName, read, Str),
+                      read_file(Str, Lines),
+                      close(Str), !,
+                      removeLast(Lines, D).
+
+/**
+ * Loads training data and saves them to predicate inputs/1
+ * @param FName path to the data file
+ */
+loadTrainData(FName) :- loadData(FName, Vals),
+                        asserta(inputs(Vals)).
+
+/**
+ * Loads output data and saves them to predicate outputs/1
+ * @param FName path to the data file
+ */
+loadOutputData(FName) :- loadData(FName, Vals),
+                         asserta(outputs(Vals)).
+
+/**
+ * Loads weights and saves them to predicate weights/1
+ * @param FName path to the data file
+ */
+loadWeights(FName) :- loadData(FName, Vals),
+                      asserta(weights(Vals)).
+
+/**
+ * Loads input from the user
+ * @param I users input parsed as numbers
+ */                  
+loadInput(I) :- read_lines2(Line, 1), 
+                split_lines2(Line, S), 
+                nth0(0, S, S1),
+                parseInput(S1, I).
+% Helper function for loadInput/1
+parseInput([], []).
+parseInput([X|XS], [Y|YS]) :- retezec(X, Y2),
+                              cislo(Y2, Y),
+                              parseInput(XS, YS).
